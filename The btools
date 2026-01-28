@@ -1,0 +1,78 @@
+--this is a client sided script
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local Backpack = Player:WaitForChild("Backpack")
+
+-- Setup GUI for Handles
+local screenGui = Instance.new("ScreenGui", Player.PlayerGui)
+screenGui.Name = "BToolsGui"
+
+local handles = Instance.new("Handles", screenGui)
+handles.Color3 = Color3.fromRGB(0, 255, 255)
+handles.Visible = false
+
+local selectedPart = nil
+local startCFrame = nil
+
+-- --- TOOL CREATOR FUNCTION ---
+local function createTool(name, color)
+    local tool = Instance.new("Tool")
+    tool.Name = name
+    tool.RequiresHandle = false
+    tool.Parent = Backpack
+    return tool
+end
+
+-- 1. MOVE TOOL
+local moveTool = createTool("Move", Color3.new(0,1,1))
+moveTool.Activated:Connect(function()
+    if Mouse.Target and not Mouse.Target:IsA("Terrain") then
+        selectedPart = Mouse.Target
+        handles.Adornee = selectedPart
+        handles.Visible = true
+    end
+end)
+
+handles.MouseButton1Down:Connect(function()
+    if selectedPart then startCFrame = selectedPart.CFrame end
+end)
+
+handles.MouseDrag:Connect(function(face, distance)
+    if selectedPart and startCFrame then
+        local direction = Vector3.FromNormalId(face)
+        -- Added 1-stud grid snapping for that "official" feel
+        local snapDistance = math.floor(distance + 0.5) 
+        selectedPart.CFrame = startCFrame * CFrame.new(direction * snapDistance)
+    end
+end)
+
+-- 2. CLONE TOOL
+local cloneTool = createTool("📋 Clone", Color3.new(0,1,0))
+cloneTool.Activated:Connect(function()
+    local target = Mouse.Target
+    if target and not target:IsA("Terrain") then
+        local copy = target:Clone()
+        copy.Parent = target.Parent
+        print("Cloned: " .. target.Name)
+    end
+end)
+
+-- 3. DELETE TOOL
+local deleteTool = createTool("🗑️Delete", Color3.new(1,0,0))
+deleteTool.Activated:Connect(function()
+    local target = Mouse.Target
+    if target and not target:IsA("Terrain") then
+        target:Destroy()
+    end
+end)
+
+-- --- CLEANUP ---
+local function hideHandles()
+    handles.Visible = false
+    handles.Adornee = nil
+    selectedPart = nil
+end
+
+moveTool.Unequipped:Connect(hideHandles)
+deleteTool.Equipped:Connect(hideHandles)
+cloneTool.Equipped:Connect(hideHandles)
